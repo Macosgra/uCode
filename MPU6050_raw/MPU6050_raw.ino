@@ -51,7 +51,9 @@ int16_t gx, gy, gz;
 bool blinkState = false;
 const int buttonPin = 4;
 int buttonState = 0;  
-int division = 100;
+int divi = 100;
+int dely = 5;
+int lastButtonState = LOW;
 
 void setup() {
     // join I2C bus (I2Cdev library doesn't do this automatically)
@@ -60,36 +62,78 @@ void setup() {
     // initialize serial communication
     // (38400 chosen because it works as well at 8MHz as it does at 16MHz, but
     // it's really up to you depending on your project)
-    Serial.begin(9800);
+    Serial.begin(9600);
     pinMode(buttonPin, INPUT);
     // initialize device
-    Serial.println("Initializing I2C devices...");
+    //Serial.println("Initializing I2C devices...");
     accelgyro.initialize();
-
+    accelgyro.setFullScaleAccelRange(0);
     // verify connection
-    Serial.println("Testing device connections...");
-    Serial.println(accelgyro.testConnection() ? "MPU6050 connection successful" : "MPU6050 connection failed");
+    //Serial.println("Testing device connections...");
+    //Serial.println(accelgyro.testConnection() ? "MPU6050 connection successful" : "MPU6050 connection failed");
 
     // configure Arduino LED for
     pinMode(LED_PIN, OUTPUT);
 }
 
+
+void sendNumber(int num){
+  if(num<0){
+    Serial.write('-');
+    delay(dely);
+    num = -num;
+  }
+  do{
+    Serial.write(num%10);
+    delay(dely);
+    num/=10;
+  }while(num!=0);
+  Serial.write(',');
+  delay(dely);
+}
+
 void loop() {
      buttonState = digitalRead(buttonPin);
-
+     if(buttonState != lastButtonState){
+        //envio informacion a node
+        Serial.write(11);
+        lastButtonState = buttonState;
+     }
   // check if the pushbutton is pressed.
   // if it is, the buttonState is HIGH:
-  if (buttonState == HIGH) {
-    accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-    Serial.write(0);
-    Serial.write(5);
-    Serial.write(9);
-    Serial.write(100);
-    Serial.write(-5);
-    Serial.write(-50);
-    Serial.write("Test");
-    Serial.write("test2");
-    delay(1000);
+    if (buttonState == HIGH) {
+      //accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+      accelgyro.getRotation(&gx, &gy, &gz);
+      if(1){
+//        //sendNumber(ax);
+//        //sendNumber(ay);
+//        //sendNumber(az);
+          sendNumber(gx);
+          sendNumber(gy);
+          sendNumber(gz);
+      }else{
+        //Serial.print(ax/divi); Serial.print(" , ");
+        //Serial.print(ay/divi); Serial.print(" , ");
+        //Serial.print(az/divi); Serial.print(" , ");
+        Serial.print(gx); Serial.print(" , ");
+        Serial.print(gy); Serial.print(" , ");
+        Serial.println(gz);
+        
+      }
+
+//    Serial.write(0);
+//    delay(dely);
+//    Serial.write(5);
+//    delay(dely);
+//    Serial.write(-9);delay(dely);
+//    Serial.write('-');delay(dely);
+//    Serial.write(',');delay(dely);
+    //Serial.write(100);delay(dely);
+    //Serial.write(-5);delay(dely);
+    //Serial.write(-50);delay(dely);
+    //Serial.write("Test");delay(dely);
+    //Serial.write("test2");delay(dely);
+    //delay(8000);
     
     
   }
@@ -109,9 +153,10 @@ void loop() {
     gz_ = gz;
     // display tab-separated accel/gyro x/y/z values
     
-    delay(100);
+    delay(300);
 
     // blink LED to indicate activity
-    blinkState = !blinkState;
-    digitalWrite(LED_PIN, blinkState);
+    //blinkState = !blinkState;
+    //digitalWrite(LED_PIN, blinkState);
 }
+
